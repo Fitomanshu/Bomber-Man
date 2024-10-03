@@ -1,0 +1,75 @@
+/* Estilos básicos */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #333;
+    color: white;
+    text-align: center;
+}
+
+/* Encabezado del juego */
+header {
+    background-color: #222;
+    padding: 10px;
+}
+
+#hud {
+    display: flex;
+    justify-content: space-around;
+    margin: 10px 0;
+}
+
+/* Área de juego */
+#game-area {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+/* Tablero del juego */
+#game-grid {
+    display: grid;
+    grid-template-columns: repeat(13, 40px);
+    grid-template-rows: repeat(13, 40px);
+    gap: 2px;
+    background-color: #444;
+    padding: 10px;
+    border: 4px solid white;
+}
+
+/* Estilos de los elementos del juego */
+.tile {
+    width: 40px;
+    height: 40px;
+}
+
+.wall {
+    background-color: #555;
+}
+
+.brick {
+    background-color: #a52a2a;
+}
+
+.player {
+    background-color: #00f;
+}
+
+.enemy {
+    background-color: #f00;
+}
+
+.bomb {
+    background-color: #000;
+}
+
+.explosion {
+    background-color: #ff0; /* Color de la explosión */
+}
+
+/* Pie de página */
+footer {
+    margin-top: 20px;
+    color: #ddd;
+}
