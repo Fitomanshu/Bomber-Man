@@ -1,38 +1,86 @@
+// Seleccionar el canvas y obtener el contexto 2D
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Dimensiones del canvas
+const canvasSize = canvas.width; // Como es cuadrado, el ancho y el alto son iguales
+
+// Dimensiones de la cuadrícula
+const rows = 13;  // Igual número de filas y columnas
+const cols = 13;
+
+// Tamaño de cada celda (cuadrados)
+const cellSize = canvasSize / cols;
+
 // Parámetros del juego
 const gridSize = 13;  // Tamaño del tablero (13x13)
-const gameGrid = document.getElementById('game-grid');
 let playerPosition = { row: 1, col: 1 };  // Posición inicial del jugador
-const bombs = [];  // Almacena las bombas colocadas
+const bombs = [];  // Almacena las bombas
 let lives = 3;  // Contador de vidas
 const livesDisplay = document.getElementById('lives'); // Elemento para mostrar las vidas
 
+// Estructura para almacenar el estado de cada celda
+const gameGrid = Array.from({ length: gridSize }, () => Array(gridSize).fill(null));
+
 // Inicializar el tablero de juego
 function initGameGrid() {
-    gameGrid.innerHTML = '';  // Limpiar el tablero
+    // Colocar paredes indestructibles en los bordes
     for (let row = 0; row < gridSize; row++) {
         for (let col = 0; col < gridSize; col++) {
-            const tile = document.createElement('div');
-            tile.classList.add('tile');
-            tile.dataset.row = row;
-            tile.dataset.col = col;
-
-            // Colocar paredes indestructibles en los bordes y cada 2 espacios
-            if (row === 0 || row === gridSize - 1 || col === 0 || col === gridSize - 1 || (row % 2 === 0 && col % 2 === 0)) {
-                tile.classList.add('wall');
+            if (row === 0 || row === gridSize - 1 || col === 0 || col === gridSize - 1) {
+                gameGrid[row][col] = 'wall'; // Bloques indestructibles
             } else if (Math.random() < 0.3 && !(row === 1 && col === 1)) {
-                // Colocar bloques destructibles (bricks) aleatoriamente, pero no en la posición del jugador
-                tile.classList.add('brick');
+                gameGrid[row][col] = 'brick'; // Bloques destructibles
+            } else if (Math.random() < 0.1) {
+                gameGrid[row][col] = 'wall'; // Añadir bloques indestructibles en el área jugable
+            } else {
+                gameGrid[row][col] = 'empty'; // Celdas vacías
             }
-
-            // Colocar al jugador en la posición inicial
-            if (row === playerPosition.row && col === playerPosition.col) {
-                tile.classList.add('player');
-            }
-
-            gameGrid.appendChild(tile);
         }
     }
     updateLivesDisplay(); // Mostrar vidas al iniciar el juego
+    drawGrid(); // Dibujar la cuadrícula inicial
+}
+
+// Función para dibujar la cuadrícula
+function drawGrid() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpiar el canvas
+    for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+            let x = col * cellSize;
+            let y = row * cellSize;
+
+            // Verificar el estado de la celda
+            if (gameGrid[row][col] === 'wall') {
+                ctx.fillStyle = '#555555'; // Color gris oscuro para bloques indestructibles
+            } else if (gameGrid[row][col] === 'brick') {
+                ctx.fillStyle = '#FF0000'; // Color rojo para bloques destructibles
+            } else {
+                ctx.fillStyle = '#00FF00'; // Color verde para celdas vacías
+            }
+
+            // Dibujar el bloque
+            ctx.fillRect(x, y, cellSize, cellSize);
+
+            // Dibujar el borde del bloque (para resaltar la cuadrícula)
+            ctx.strokeStyle = '#ffffff'; // Color de la línea
+            ctx.strokeRect(x, y, cellSize, cellSize);
+        }
+    }
+
+    // Dibujar al jugador
+    const playerX = playerPosition.col * cellSize;
+    const playerY = playerPosition.row * cellSize;
+    ctx.fillStyle = '#0000FF'; // Color azul para el jugador
+    ctx.fillRect(playerX, playerY, cellSize, cellSize); // Dibujar al jugador
+
+    // Dibujar las bombas
+    bombs.forEach(bomb => {
+        const bombX = bomb.col * cellSize;
+        const bombY = bomb.row * cellSize;
+        ctx.fillStyle = '#0000FF'; // Color azul para la bomba
+        ctx.fillRect(bombX, bombY, cellSize, cellSize); // Dibujar bomba
+    });
 }
 
 // Función para actualizar el contador de vidas en el HUD
@@ -44,14 +92,12 @@ function updateLivesDisplay() {
 function movePlayer(newRow, newCol) {
     // Verificar si la nueva posición está dentro del tablero y no es una pared
     if (newRow >= 0 && newRow < gridSize && newCol >= 0 && newCol < gridSize) {
-        const targetTile = document.querySelector(`[data-row="${newRow}"][data-col="${newCol}"]`);
-        if (!targetTile.classList.contains('wall') && !targetTile.classList.contains('brick')) {
+        const targetCell = gameGrid[newRow][newCol];
+        if (targetCell !== 'wall' && targetCell !== 'brick') {
             // Actualizar la posición del jugador
-            const currentTile = document.querySelector(`[data-row="${playerPosition.row}"][data-col="${playerPosition.col}"]`);
-            currentTile.classList.remove('player');
             playerPosition.row = newRow;
             playerPosition.col = newCol;
-            targetTile.classList.add('player');
+            drawGrid(); // Redibujar la cuadrícula
         }
     }
 }
@@ -59,7 +105,6 @@ function movePlayer(newRow, newCol) {
 // Función para colocar una bomba
 function placeBomb() {
     const bombPosition = { ...playerPosition };  // Posición de la bomba igual a la del jugador
-    const bombTile = document.querySelector(`[data-row="${bombPosition.row}"][data-col="${bombPosition.col}"]`);
 
     // Verificar si hay una bomba en la misma posición
     if (bombs.some(bomb => bomb.row === bombPosition.row && bomb.col === bombPosition.col)) {
@@ -67,7 +112,6 @@ function placeBomb() {
     }
 
     // Marcar la bomba en el tablero
-    bombTile.classList.add('bomb');
     bombs.push(bombPosition);  // Agregar bomba a la lista
 
     // Explosión de la bomba después de 3 segundos
@@ -95,17 +139,11 @@ function explodeBomb(bombPosition) {
     // Procesar la explosión
     let playerHit = false; // Variable para verificar si el jugador está cerca de la explosión
     explosionTiles.forEach(pos => {
-        const tile = document.querySelector(`[data-row="${pos.row}"][data-col="${pos.col}"]`);
-        
-        // Solo destruye bloques destructibles
-        if (tile.classList.contains('brick')) {
-            tile.classList.remove('brick'); // Destruir bloque
-        } else if (tile.classList.contains('wall')) {
-            return; // No hacer nada si es una pared
+        // Solo destruir bloques destructibles
+        if (gameGrid[pos.row][pos.col] === 'brick') {
+            gameGrid[pos.row][pos.col] = 'empty'; // Destruir bloque
         }
-        
-        tile.classList.add('explosion'); // Mostrar explosión
-        
+
         // Verificar si el jugador está cerca de la explosión
         if (pos.row === playerPosition.row && pos.col === playerPosition.col) {
             playerHit = true; // El jugador está en la posición de la explosión
@@ -113,26 +151,39 @@ function explodeBomb(bombPosition) {
     });
 
     // Remover bomba visualmente
-    const bombTile = document.querySelector(`[data-row="${bombPosition.row}"][data-col="${bombPosition.col}"]`);
-    bombTile.classList.remove('bomb'); // Quitar la bomba
+    bombs.splice(bombs.indexOf(bombPosition), 1); // Quitar la bomba
+
+    // Dibujar explosión
+    drawExplosion(explosionTiles);
 
     // Disminuir vidas si el jugador fue golpeado
     if (playerHit) {
         lives--; // Disminuir la vida
         updateLivesDisplay(); // Actualizar el contador de vidas
-        if (lives <= 0) {
-            alert('¡Game Over!'); // Alerta de fin del juego
-            // Aquí podrías reiniciar el juego o detener la ejecución
-        }
     }
 
-    // Remover la clase de explosión después de un breve periodo
+    // Redibujar la cuadrícula después de la explosión
     setTimeout(() => {
         explosionTiles.forEach(pos => {
-            const tile = document.querySelector(`[data-row="${pos.row}"][data-col="${pos.col}"]`);
-            tile.classList.remove('explosion'); // Quitar explosión después de 500ms
+            // Restaurar la celda a vacía si no es un bloque indestructible
+            if (gameGrid[pos.row][pos.col] !== 'wall') {
+                gameGrid[pos.row][pos.col] = 'empty'; // Restaurar la celda a vacía
+            }
         });
-    }, 500); // 500ms para que la explosión sea visible antes de desaparecer
+        drawGrid(); // Redibujar la cuadrícula después de la explosión
+    }, 1000); // Esperar 1 segundo antes de restaurar el estado
+}
+
+// Función para dibujar la explosión
+function drawExplosion(explosionTiles) {
+    explosionTiles.forEach(pos => {
+        const x = pos.col * cellSize;
+        const y = pos.row * cellSize;
+
+        // Color amarillo para la explosión
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.7)'; // Color amarillo semi-transparente
+        ctx.fillRect(x, y, cellSize, cellSize); // Dibujar explosión
+    });
 }
 
 // Control de teclado para mover al jugador y colocar bombas
@@ -150,11 +201,11 @@ window.addEventListener('keydown', (event) => {
         case 'ArrowRight':
             movePlayer(playerPosition.row, playerPosition.col + 1);
             break;
-        case ' ': // Barra espaciadora para colocar bomba
+        case 'Enter': // Tecla 'b' para colocar una bomba
             placeBomb();
             break;
     }
 });
 
-// Iniciar el juego
+// Inicializar el juego
 initGameGrid();

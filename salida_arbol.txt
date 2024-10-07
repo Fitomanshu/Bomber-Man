@@ -1,0 +1,12 @@
+└── Carpeta '.git' (omitida)
+└── .gitattributes
+└── css
+    └── style.css
+└── directorio.py
+└── game.html
+└── js
+    └── script.js
+└── README.md
+└── salida_arbol.txt
+
+No se encontraron los archivos específicos.
